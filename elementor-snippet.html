@@ -1,0 +1,130 @@
+<!--
+  ELEMENTOR — widget HTML
+  Incolla tutto questo blocco nel widget "HTML" di Elementor.
+
+  Leggero: nessuna libreria esterna (~3 KB di JS inline).
+  L'animazione si ferma quando il logo esce dallo schermo.
+-->
+
+<div class="ritamaria-logo" id="ritamaria-logo">
+  <svg viewBox="0 0 3064 2986" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logo Rita Maria">
+    <rect data-b="1" x="0" y="0" width="3063.24" height="220.919" fill="#1a1a1a"/>
+    <rect data-b="2" x="0" y="339.15" width="510.589" height="2645.98" fill="#1a1a1a"/>
+    <rect data-b="3" x="628.82" y="2336.49" width="432.484" height="648.635" fill="#1a1a1a"/>
+    <rect data-b="4" x="628.82" y="1490.55" width="983.2" height="727.709" fill="#1a1a1a"/>
+    <rect data-b="5" x="628.82" y="339.15" width="1533.91" height="1033.17" fill="#1a1a1a"/>
+    <rect data-b="6" x="2280.97" y="339.15" width="782.268" height="1776.23" fill="#1a1a1a"/>
+    <rect data-b="7" x="2280.97" y="2233.61" width="782.268" height="751.513" fill="#1a1a1a"/>
+    <rect data-b="8" x="1179.54" y="2336.49" width="432.484" height="648.635" fill="#1a1a1a"/>
+    <rect data-b="9" x="1730.25" y="1490.55" width="432.484" height="1494.58" fill="#1a1a1a"/>
+  </svg>
+</div>
+
+<style>
+  .ritamaria-logo {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    line-height: 0;
+  }
+  .ritamaria-logo svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>
+
+<script>
+(function () {
+  var root = document.getElementById("ritamaria-logo");
+  if (!root || root.dataset.ready) return;
+  root.dataset.ready = "1";
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  var MARIA = [
+    { x: 0, y: 0, width: 3063.24, height: 220.919 },
+    { x: 0, y: 339.15, width: 510.589, height: 2645.98 },
+    { x: 628.82, y: 2336.49, width: 432.484, height: 648.635 },
+    { x: 628.82, y: 1490.55, width: 983.2, height: 727.709 },
+    { x: 628.82, y: 339.15, width: 1533.91, height: 1033.17 },
+    { x: 2280.97, y: 339.15, width: 782.268, height: 1776.23 },
+    { x: 2280.97, y: 2233.61, width: 782.268, height: 751.513 },
+    { x: 1179.54, y: 2336.49, width: 432.484, height: 648.635 },
+    { x: 1730.25, y: 1490.55, width: 432.484, height: 1494.58 }
+  ];
+
+  var CAMBIO = [
+    { x: 0, y: 0, width: 2163.12, height: 220.96 },
+    { x: 0, y: 339.22, width: 510.68, height: 1033.38 },
+    { x: 0, y: 2336.97, width: 1061.5, height: 648.77 },
+    { x: 0, y: 1490.86, width: 2163.12, height: 727.86 },
+    { x: 628.94, y: 339.22, width: 1534.19, height: 1033.38 },
+    { x: 2281.38, y: 0, width: 782.41, height: 2218.71 },
+    { x: 2281.38, y: 2336.97, width: 782.41, height: 648.76 },
+    { x: 1179.75, y: 2336.97, width: 432.56, height: 648.77 },
+    { x: 1730.56, y: 2336.97, width: 432.56, height: 648.77 }
+  ];
+
+  var WAVES = [[1], [2, 5, 6], [3, 4, 7], [8, 9]];
+  var DURATION = 5000;
+  var STAGGER = 350;
+  var ATTRS = ["x", "y", "width", "height"];
+  var waveMap = {};
+  WAVES.forEach(function (wave, i) {
+    wave.forEach(function (id) { waveMap[id] = i; });
+  });
+
+  var rects = [];
+  root.querySelectorAll("rect[data-b]").forEach(function (el) {
+    rects[Number(el.getAttribute("data-b"))] = el;
+  });
+
+  function ease(t) {
+    return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function blockProgress(id, global) {
+    var start = (waveMap[id] * STAGGER) / DURATION;
+    if (global <= start) return 0;
+    return ease(Math.min(1, (global - start) / (1 - start)));
+  }
+
+  function render(global) {
+    for (var i = 1; i <= 9; i++) {
+      var t = blockProgress(i, global);
+      var from = MARIA[i - 1];
+      var to = CAMBIO[i - 1];
+      var el = rects[i];
+      for (var j = 0; j < ATTRS.length; j++) {
+        var key = ATTRS[j];
+        el.setAttribute(key, lerp(from[key], to[key], t));
+      }
+    }
+  }
+
+  var visible = true;
+  var start = performance.now();
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      visible = entries[0].isIntersecting;
+      if (visible) start = performance.now() - (start % (DURATION * 2));
+    }, { threshold: 0.1 }).observe(root);
+  }
+
+  function tick(now) {
+    requestAnimationFrame(tick);
+    if (!visible) return;
+    var elapsed = (now - start) % (DURATION * 2);
+    var half = elapsed / DURATION;
+    render(half <= 1 ? half : 2 - half);
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
